@@ -1,0 +1,1803 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IB Economics Graphing Tool</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --tertiary: #e74c3c;
+            --background: #f8f9fa;
+            --card: #ffffff;
+            --text: #333333;
+            --border: #dddddd;
+            --hover: #eaecef;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 20px;
+        }
+
+        .sidebar {
+            width: 300px;
+            flex-shrink: 0;
+        }
+
+        .graph-container {
+            flex-grow: 1;
+            position: relative;
+            background-color: var(--card);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            min-height: 500px;
+        }
+
+        .panel {
+            background-color: var(--card);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        button, select {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background-color: var(--card);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: var(--hover);
+        }
+
+        .primary-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+        }
+
+        .primary-btn:hover {
+            background-color: #2980b9;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .toolbar button {
+            margin-left: 10px;
+        }
+
+        .tool-btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        #graph-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .annotations-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .annotation {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: 0.8rem;
+            pointer-events: auto;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .export-options {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+
+        .export-options button {
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .onboarding-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .onboarding-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .onboarding-step {
+            margin: 20px 0;
+        }
+
+        .point {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--tertiary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: move;
+        }
+
+        .intersection-point {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--tertiary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+            }
+            
+            .graph-container {
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>IB Economics Graphing Tool</h1>
+            <div class="toolbar">
+                <button id="new-btn">New</button>
+                <button id="export-btn" class="primary-btn">Export</button>
+                <button id="help-btn">Help</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="panel">
+                    <h2>Select Model</h2>
+                    <select id="model-select">
+                        <option value="supply-demand">Supply &amp; Demand</option>
+                        <option value="ad-as">Aggregate Demand &amp; Supply</option>
+                        <option value="ppc">Production Possibility Curve</option>
+                        <option value="phillips">Phillips Curve</option>
+                        <option value="lorenz">Lorenz Curve</option>
+                        <option value="custom">Custom Graph</option>
+                    </select>
+                </div>
+
+                <div class="panel">
+                    <h2>Controls</h2>
+                    <div id="model-controls">
+                        <!-- Dynamic controls will be inserted here -->
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>Tools</h2>
+                    <button class="tool-btn" id="add-line-btn">Add Line</button>
+                    <button class="tool-btn" id="add-label-btn">Add Label</button>
+                    <button class="tool-btn" id="find-intersections-btn">Find Intersections</button>
+                </div>
+            </div>
+
+            <div class="graph-container">
+                <canvas id="graph-canvas"></canvas>
+                <div id="annotations-layer" class="annotations-layer"></div>
+            </div>
+        </div>
+
+        <div id="export-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Export Graph</h2>
+                <div class="export-options">
+                    <button id="export-png-btn" class="primary-btn">PNG</button>
+                    <button id="export-svg-btn">SVG</button>
+                    <button id="export-pdf-btn">PDF</button>
+                </div>
+                <button id="close-export-btn">Cancel</button>
+            </div>
+        </div>
+
+        <div id="help-overlay" class="onboarding-overlay hidden">
+            <div class="onboarding-content">
+                <h2>Welcome to IB Economics Graphing Tool</h2>
+                
+                <div class="onboarding-step">
+                    <h3>Step 1: Choose a Model</h3>
+                    <p>Select from preset economic models or create your own custom graph.</p>
+                </div>
+                
+                <div class="onboarding-step">
+                    <h3>Step 2: Adjust Parameters</h3>
+                    <p>Use the controls in the sidebar to modify your economic model.</p>
+                </div>
+                
+                <div class="onboarding-step">
+                    <h3>Step 3: Interact with the Graph</h3>
+                    <p>Drag points to adjust lines. Find intersections and add annotations.</p>
+                </div>
+                
+                <div class="onboarding-step">
+                    <h3>Step 4: Export Your Graph</h3>
+                    <p>Save your work as an image for your IB Economics assignments.</p>
+                </div>
+                
+                <button id="close-help-btn" class="primary-btn">Start Graphing</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Core utility functions
+        function generateId() {
+            return '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function graphToCanvasCoords(x, y, canvas, bounds) {
+            const { xMin, xMax, yMin, yMax } = bounds;
+            const xScale = canvas.width / (xMax - xMin);
+            const yScale = canvas.height / (yMax - yMin);
+            
+            return {
+                x: (x - xMin) * xScale,
+                y: canvas.height - (y - yMin) * yScale // Invert y-axis
+            };
+        }
+
+        function canvasToGraphCoords(canvasX, canvasY, canvas, bounds) {
+            const { xMin, xMax, yMin, yMax } = bounds;
+            const xScale = canvas.width / (xMax - xMin);
+            const yScale = canvas.height / (yMax - yMin);
+            
+            return {
+                x: canvasX / xScale + xMin,
+                y: (canvas.height - canvasY) / yScale + yMin
+            };
+        }
+
+        function findIntersection(line1, line2) {
+            // Handle vertical lines
+            if (line1.isVertical && line2.isVertical) {
+                return null; // Parallel verticals don't intersect
+            }
+            
+            let x, y;
+            
+            if (line1.isVertical) {
+                x = line1.verticalX;
+                y = line2.slope * x + line2.intercept;
+            } else if (line2.isVertical) {
+                x = line2.verticalX;
+                y = line1.slope * x + line1.intercept;
+            } else {
+                // Neither line is vertical
+                if (Math.abs(line1.slope - line2.slope) < 0.0001) {
+                    return null; // Parallel lines
+                }
+                
+                x = (line2.intercept - line1.intercept) / (line1.slope - line2.slope);
+                y = line1.slope * x + line1.intercept;
+            }
+            
+            return { x, y };
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
+        // GraphRenderer class - core drawing functionality
+        class GraphRenderer {
+            constructor(canvasId, options = {}) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                
+                this.bounds = {
+                    xMin: options.xMin || 0,
+                    xMax: options.xMax || 10,
+                    yMin: options.yMin || 0,
+                    yMax: options.yMax || 10
+                };
+                
+                this.options = {
+                    gridStep: options.gridStep || 1,
+                    axisColor: options.axisColor || '#333',
+                    gridColor: options.gridColor || '#ddd',
+                    lineWidth: options.lineWidth || 2,
+                    showGrid: options.showGrid !== undefined ? options.showGrid : true,
+                    showAxis: options.showAxis !== undefined ? options.showAxis : true,
+                    showLabels: options.showLabels !== undefined ? options.showLabels : true,
+                };
+                
+                this.lines = [];
+                this.points = [];
+                this.annotations = [];
+                this.intersections = [];
+                
+                this.resizeCanvas();
+                window.addEventListener('resize', debounce(() => this.resizeCanvas(), 100));
+            }
+            
+            resizeCanvas() {
+                const container = this.canvas.parentElement;
+                this.canvas.width = container.clientWidth;
+                this.canvas.height = container.clientHeight;
+                this.render();
+            }
+            
+            clear() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+            
+            drawGrid() {
+                const { xMin, xMax, yMin, yMax } = this.bounds;
+                const { width, height } = this.canvas;
+                const { gridStep, gridColor, axisColor, showGrid, showAxis, showLabels } = this.options;
+                
+                // Calculate origin position in canvas coordinates
+                const origin = graphToCanvasCoords(0, 0, this.canvas, this.bounds);
+                
+                if (showGrid) {
+                    this.ctx.strokeStyle = gridColor;
+                    this.ctx.lineWidth = 0.5;
+                    this.ctx.beginPath();
+                    
+                    // Vertical grid lines
+                    for (let x = Math.ceil(xMin / gridStep) * gridStep; x <= xMax; x += gridStep) {
+                        if (x === 0) continue; // Skip origin line
+                        const canvasX = graphToCanvasCoords(x, 0, this.canvas, this.bounds).x;
+                        this.ctx.moveTo(canvasX, 0);
+                        this.ctx.lineTo(canvasX, height);
+                    }
+                    
+                    // Horizontal grid lines
+                    for (let y = Math.ceil(yMin / gridStep) * gridStep; y <= yMax; y += gridStep) {
+                        if (y === 0) continue; // Skip origin line
+                        const canvasY = graphToCanvasCoords(0, y, this.canvas, this.bounds).y;
+                        this.ctx.moveTo(0, canvasY);
+                        this.ctx.lineTo(width, canvasY);
+                    }
+                    
+                    this.ctx.stroke();
+                }
+                
+                if (showAxis) {
+                    this.ctx.strokeStyle = axisColor;
+                    this.ctx.lineWidth = 1;
+                    this.ctx.beginPath();
+                    
+                    // X-axis (only if origin is within view)
+                    if (yMin <= 0 && yMax >= 0) {
+                        this.ctx.moveTo(0, origin.y);
+                        this.ctx.lineTo(width, origin.y);
+                    }
+                    
+                    // Y-axis (only if origin is within view)
+                    if (xMin <= 0 && xMax >= 0) {
+                        this.ctx.moveTo(origin.x, 0);
+                        this.ctx.lineTo(origin.x, height);
+                    }
+                    
+                    this.ctx.stroke();
+                }
+                
+                if (showLabels) {
+                    this.ctx.fillStyle = axisColor;
+                    this.ctx.font = '12px Arial';
+                    this.ctx.textAlign = 'center';
+                    
+                    // X-axis labels
+                    for (let x = Math.ceil(xMin / gridStep) * gridStep; x <= xMax; x += gridStep) {
+                        if (x === 0) continue; // Skip origin
+                        const canvasX = graphToCanvasCoords(x, 0, this.canvas, this.bounds).x;
+                        const canvasY = origin.y + 15;
+                        
+                        if (canvasY >= 0 && canvasY <= height) {
+                            this.ctx.fillText(x.toString(), canvasX, canvasY);
+                        }
+                    }
+                    
+                    // Y-axis labels
+                    this.ctx.textAlign = 'right';
+                    for (let y = Math.ceil(yMin / gridStep) * gridStep; y <= yMax; y += gridStep) {
+                        if (y === 0) continue; // Skip origin
+                        const canvasPoint = graphToCanvasCoords(0, y, this.canvas, this.bounds);
+                        
+                        if (canvasPoint.x >= 0 && canvasPoint.x <= width) {
+                            this.ctx.fillText(y.toString(), origin.x - 5, canvasPoint.y - 5);
+                        }
+                    }
+                    
+                    // Origin label if in view
+                    if (xMin <= 0 && xMax >= 0 && yMin <= 0 && yMax >= 0) {
+                        this.ctx.fillText("0", origin.x - 5, origin.y + 15);
+                    }
+                }
+            }
+            
+            addLine(params) {
+                const line = {
+                    id: generateId(),
+                    color: params.color || '#3498db',
+                    thickness: params.thickness || 2,
+                    style: params.style || 'solid',
+                    ...params
+                };
+                
+                // Calculate slope and intercept if points are given
+                if (params.points && params.points.length >= 2) {
+                    const [p1, p2] = params.points;
+                    
+                    if (Math.abs(p2.x - p1.x) < 0.0001) {
+                        // Vertical line
+                        line.isVertical = true;
+                        line.verticalX = p1.x;
+                    } else {
+                        // Regular line: y = mx + b
+                        line.slope = (p2.y - p1.y) / (p2.x - p1.x);
+                        line.intercept = p1.y - line.slope * p1.x;
+                    }
+                }
+                
+                this.lines.push(line);
+                this.findIntersections();
+                this.render();
+                return line.id;
+            }
+            
+            drawLine(line) {
+                const { xMin, xMax, yMin, yMax } = this.bounds;
+                const { ctx, canvas } = this;
+                
+                ctx.strokeStyle = line.color;
+                ctx.lineWidth = line.thickness;
+                
+                // Set line style
+                if (line.style === 'dashed') {
+                    ctx.setLineDash([5, 3]);
+                } else if (line.style === 'dotted') {
+                    ctx.setLineDash([2, 2]);
+                } else {
+                    ctx.setLineDash([]);
+                }
+                
+                ctx.beginPath();
+                
+                if (line.isCurved && line.points && line.points.length > 0) {
+                    // Draw a curved line through provided points
+                    const firstPoint = graphToCanvasCoords(line.points[0].x, line.points[0].y, canvas, this.bounds);
+                    ctx.moveTo(firstPoint.x, firstPoint.y);
+                    
+                    for (let i = 1; i < line.points.length; i++) {
+                        const point = graphToCanvasCoords(line.points[i].x, line.points[i].y, canvas, this.bounds);
+                        ctx.lineTo(point.x, point.y);
+                    }
+                } else if (line.isVertical) {
+                    // Vertical line
+                    const canvasX = graphToCanvasCoords(line.verticalX, 0, canvas, this.bounds).x;
+                    ctx.moveTo(canvasX, 0);
+                    ctx.lineTo(canvasX, canvas.height);
+                } else {
+                    // Standard line
+                    // Calculate y values at the edges of the canvas
+                    let leftX = xMin;
+                    let rightX = xMax;
+                    let leftY = line.slope * leftX + line.intercept;
+                    let rightY = line.slope * rightX + line.intercept;
+                    
+                    // Convert to canvas coordinates
+                    const start = graphToCanvasCoords(leftX, leftY, canvas, this.bounds);
+                    const end = graphToCanvasCoords(rightX, rightY, canvas, this.bounds);
+                    
+                    ctx.moveTo(start.x, start.y);
+                    ctx.lineTo(end.x, end.y);
+                }
+                
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            updateLine(lineId, params) {
+                const lineIndex = this.lines.findIndex(line => line.id === lineId);
+                if (lineIndex === -1) return false;
+                
+                const line = this.lines[lineIndex];
+                Object.assign(line, params);
+                
+                // Recalculate slope and intercept if points changed
+                if (params.points && params.points.length >= 2) {
+                    const [p1, p2] = params.points;
+                    
+                    if (Math.abs(p2.x - p1.x) < 0.0001) {
+                        // Vertical line
+                        line.isVertical = true;
+                        line.verticalX = p1.x;
+                        delete line.slope;
+                        delete line.intercept;
+                    } else {
+                        // Regular line
+                        line.isVertical = false;
+                        line.slope = (p2.y - p1.y) / (p2.x - p1.x);
+                        line.intercept = p1.y - line.slope * p1.x;
+                        delete line.verticalX;
+                    }
+                }
+                
+                this.findIntersections();
+                this.render();
+                return true;
+            }
+            
+            removeLine(lineId) {
+                const index = this.lines.findIndex(line => line.id === lineId);
+                if (index !== -1) {
+                    this.lines.splice(index, 1);
+                    this.findIntersections();
+                    this.render();
+                    return true;
+                }
+                return false;
+            }
+            
+            addAnnotation(params) {
+                const annotation = {
+                    id: generateId(),
+                    text: params.text || '',
+                    x: params.x || 0,
+                    y: params.y || 0,
+                    draggable: params.draggable !== undefined ? params.draggable : true,
+                    ...params
+                };
+                
+                this.annotations.push(annotation);
+                this.renderAnnotations();
+                return annotation.id;
+            }
+            
+            renderAnnotations() {
+                const annotationsLayer = document.getElementById('annotations-layer');
+                annotationsLayer.innerHTML = '';
+                
+                this.annotations.forEach(annotation => {
+                    const { x, y } = graphToCanvasCoords(annotation.x, annotation.y, this.canvas, this.bounds);
+                    
+                    const element = document.createElement('div');
+                    element.className = 'annotation';
+                    element.dataset.id = annotation.id;
+                    element.style.left = `${x}px`;
+                    element.style.top = `${y}px`;
+                    element.textContent = annotation.text;
+                    
+                    if (annotation.draggable) {
+                        element.style.cursor = 'move';
+                        element.dataset.draggable = 'true';
+                    }
+                    
+                    annotationsLayer.appendChild(element);
+                });
+            }
+            
+            findIntersections() {
+                this.intersections = [];
+                
+                // Compare each pair of lines
+                for (let i = 0; i < this.lines.length; i++) {
+                    for (let j = i + 1; j < this.lines.length; j++) {
+                        const line1 = this.lines[i];
+                        const line2 = this.lines[j];
+                        
+                        const intersection = findIntersection(line1, line2);
+                        
+                        if (intersection) {
+                            const { x, y } = intersection;
+                            const { xMin, xMax, yMin, yMax } = this.bounds;
+                            
+                            // Check if intersection is within view
+                            if (x >= xMin && x <= xMax && y >= yMin && y <= yMax) {
+                                this.intersections.push({
+                                    id: generateId(),
+                                    x, y,
+                                    lines: [line1.id, line2.id],
+                                    label: `(${x.toFixed(1)}, ${y.toFixed(1)})`
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            
+            drawIntersections() {
+                const { ctx, canvas } = this;
+                
+                ctx.fillStyle = '#e74c3c';
+                
+                this.intersections.forEach(intersection => {
+                    const point = graphToCanvasCoords(intersection.x, intersection.y, canvas, this.bounds);
+                    
+                    // Draw point
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw label
+                    ctx.fillStyle = '#333';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(intersection.label, point.x, point.y - 10);
+                    
+                    ctx.fillStyle = '#e74c3c';
+                });
+            }
+            
+            render() {
+                this.clear();
+                this.drawGrid();
+                
+                // Draw all lines
+                this.lines.forEach(line => this.drawLine(line));
+                
+                // Draw intersections
+                this.drawIntersections();
+                
+                // Update annotations
+                this.renderAnnotations();
+            }
+            
+            export(format) {
+                if (format === 'png') {
+                    const dataUrl = this.canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = 'economics-graph.png';
+                    link.click();
+                } else if (format === 'svg') {
+                    alert('SVG export is not yet implemented');
+                } else if (format === 'pdf') {
+                    alert('PDF export is not yet implemented');
+                }
+            }
+        }
+
+        // Economic models implementation
+        class SupplyDemandModel {
+            constructor(renderer) {
+                this.renderer = renderer;
+                this.lines = {};
+                this.annotations = {};
+                
+                this.params = {
+                    demandIntercept: 10,
+                    demandSlope: -1,
+                    supplyIntercept: 0,
+                    supplySlope: 1,
+                    showEquilibrium: true
+                };
+            }
+            
+            initialize() {
+                // Set graph bounds
+                this.renderer.bounds = {
+                    xMin: 0,
+                    xMax: 12,
+                    yMin: 0, 
+                    yMax: 12
+                };
+                
+                // Create demand line
+                this.lines.demand = this.renderer.addLine({
+                    label: 'Demand',
+                    color: '#e74c3c',
+                    points: [
+                        { x: 0, y: this.params.demandIntercept },
+                        { x: this.params.demandIntercept / -this.params.demandSlope, y: 0 }
+                    ]
+                });
+                
+                // Create supply line
+                this.lines.supply = this.renderer.addLine({
+                    label: 'Supply',
+                    color: '#2ecc71',
+                    points: [
+                        { x: 0, y: this.params.supplyIntercept },
+                        { x: 10, y: this.params.supplySlope * 10 + this.params.supplyIntercept }
+                    ]
+                });
+                
+                // Add labels
+                this.annotations.xLabel = this.renderer.addAnnotation({
+                    text: 'Quantity',
+                    x: 6,
+                    y: -0.5
+                });
+                
+                this.annotations.yLabel = this.renderer.addAnnotation({
+                    text: 'Price',
+                    x: -0.5,
+                    y: 6
+                });
+                
+                // Add equilibrium point
+                this.updateEquilibrium();
+                
+                // Create controls
+                this.createControls();
+            }
+            
+            updateEquilibrium() {
+                // Calculate equilibrium
+                const equilibriumX = (this.params.demandIntercept - this.params.supplyIntercept) / 
+                                    (this.params.supplySlope - this.params.demandSlope);
+                const equilibriumY = this.params.demandSlope * equilibriumX + this.params.demandIntercept;
+                
+                // Remove existing annotation if it exists
+                if (this.annotations.equilibrium) {
+                    this.renderer.annotations = this.renderer.annotations.filter(
+                        a => a.id !== this.annotations.equilibrium
+                    );
+                }
+                
+                // Add new annotation if showing equilibrium
+                if (this.params.showEquilibrium) {
+                    this.annotations.equilibrium = this.renderer.addAnnotation({
+                        text: `Equilibrium (${equilibriumX.toFixed(1)}, ${equilibriumY.toFixed(1)})`,
+                        x: equilibriumX + 0.5,
+                        y: equilibriumY
+                    });
+                }
+            }
+            
+            createControls() {
+                const controlsContainer = document.getElementById('model-controls');
+                controlsContainer.innerHTML = `
+                    <div class="control-group">
+                        <label>Demand Intercept: <span id="demand-intercept-value">${this.params.demandIntercept}</span></label>
+                        <input type="range" id="demand-intercept" min="5" max="15" step="0.5" value="${this.params.demandIntercept}">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Demand Slope: <span id="demand-slope-value">${this.params.demandSlope}</span></label>
+                        <input type="range" id="demand-slope" min="-3" max="-0.5" step="0.1" value="${this.params.demandSlope}">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Supply Intercept: <span id="supply-intercept-value">${this.params.supplyIntercept}</span></label>
+                        <input type="range" id="supply-intercept" min="-2" max="5" step="0.5" value="${this.params.supplyIntercept}">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Supply Slope: <span id="supply-slope-value">${this.params.supplySlope}</span></label>
+                        <input type="range" id="supply-slope" min="0.5" max="3" step="0.1" value="${this.params.supplySlope}">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="show-equilibrium" ${this.params.showEquilibrium ? 'checked' : ''}>
+                            Show Equilibrium
+                        </label>
+                    </div>
+                    
+                    <div class="control-group">
+                        <button id="shift-demand-right" class="tool-btn">Shift Demand Right →</button>
+                        <button id="shift-demand-left" class="tool-btn">← Shift Demand Left</button>
+                        <button id="shift-supply-right" class="tool-btn">Shift Supply Right →</button>
+                        <button id="shift-supply-left" class="tool-btn">← Shift Supply Left</button>
+                    </div>
+                `;
+                
+                // Add event listeners
+                document.getElementById('demand-intercept').addEventListener('input', e => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('demand-intercept-value').textContent = value;
+                    this.updateParams({ demandIntercept: value });
+                });
+                
+                document.getElementById('demand-slope').addEventListener('input', e => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('demand-slope-value').textContent = value;
+                    this.updateParams({ demandSlope: value });
+                });
+                
+                document.getElementById('supply-intercept').addEventListener('input', e => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('supply-intercept-value').textContent = value;
+                    this.updateParams({ supplyIntercept: value });
+                });
+                
+                document.getElementById('supply-slope').addEventListener('input', e => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('supply-slope-value').textContent = value;
+                    this.updateParams({ supplySlope: value });
+                });
+                
+                document.getElementById('show-equilibrium').addEventListener('change', e => {
+                    this.updateParams({ showEquilibrium: e.target.checked });
+                });
+                
+                document.getElementById('shift-demand-right').addEventListener('click', () => {
+                    this.animateShift('demand', 'intercept', 1);
+                });
+                
+                document.getElementById('shift-demand-left').addEventListener('click', () => {
+                    this.animateShift('demand', 'intercept', -1);
+                });
+                
+                document.getElementById('shift-supply-right').addEventListener('click', () => {
+                    this.animateShift('supply', 'intercept', -1);
+                });
+                
+                document.getElementById('shift-supply-left').addEventListener('click', () => {
+                    this.animateShift('supply', 'intercept', 1);
+                });
+            }
+            
+            updateParams(newParams) {
+                // Update parameters
+                Object.assign(this.params, newParams);
+                
+                // Update demand line
+                this.renderer.updateLine(this.lines.demand, {
+                    points: [
+                        { x: 0, y: this.params.demandIntercept },
+                        { x: this.params.demandIntercept / -this.params.demandSlope, y: 0 }
+                    ]
+                });
+                
+                // Update supply line
+                this.renderer.updateLine(this.lines.supply, {
+                    points: [
+                        { x: 0, y: this.params.supplyIntercept },
+                        { x: 10, y: this.params.supplySlope * 10 + this.params.supplyIntercept }
+                    ]
+                });
+                
+                // Update equilibrium
+                this.updateEquilibrium();
+            }
+            
+            animateShift(line, param, amount) {
+                const startValue = this.params[line + 'Intercept'];
+                const endValue = startValue + amount;
+                
+                // Simple animation
+                const steps = 20;
+                const duration = 500; // ms
+                const stepTime = duration / steps;
+                let currentStep = 0;
+                
+                const animate = () => {
+                    currentStep++;
+                    const progress = currentStep / steps;
+                    const current = startValue + (endValue - startValue) * progress;
+                    
+                    // Create a temporary parameter object
+                    const update = {};
+                    update[line + 'Intercept'] = current;
+                    this.updateParams(update);
+                    
+                    if (currentStep < steps) {
+                        setTimeout(animate, stepTime);
+                    }
+                };
+                
+                animate();
+            }
+            
+            destroy() {
+                // Remove all lines
+                Object.values(this.lines).forEach(lineId => {
+                    this.renderer.removeLine(lineId);
+                });
+                
+                // Remove all annotations
+                this.renderer.annotations = [];
+            }
+        }
+
+        class AdAsModel {
+            constructor(renderer) {
+                this.renderer = renderer;
+                this.lines = {};
+                this.annotations = {};
+                
+                this.params = {
+                    adIntercept: 10,
+                    adCurvature: 0.1,
+                    srasIntercept: 2,
+                    srasSlope: 0.5,
+                    lrasPosition: 7
+                };
+            }
+            
+            initialize() {
+                // Set graph bounds
+                this.renderer.bounds = {
+                    xMin: 0,
+                    xMax: 12,
+                    yMin: 0, 
+                    yMax: 12
+                };
+                
+                // Create AD curve (approximated with points)
+                this.createADCurve();
+                
+                // Create SRAS line
+                this.lines.sras = this.renderer.addLine({
+                    label: 'SRAS',
+                    color: '#2ecc71',
+                    points: [
+                        { x: 0, y: this.params.srasIntercept },
+                        { x: 12, y: this.params.srasSlope * 12 + this.params.srasIntercept }
+                    ]
+                });
+                
+                // Create LRAS line (vertical)
+                this.lines.lras = this.renderer.addLine({
+                    label: 'LRAS',
+                    color: '#3498db',
+                    style: 'dashed',
+                    isVertical: true,
+                    verticalX: this.params.lrasPosition,
+                    points: [
+                        { x: this.params.lrasPosition, y: 0 },
+                        { x: this.params.lrasPosition, y: 12 }
+                    ]
+                });
+                
+                // Add labels
+                this.annotations.xLabel = this.renderer.addAnnotation({
+                    text: 'Real GDP',
+                    x: 6,
+                    y: -0.5
+                });
+                
+                this.annotations.yLabel = this.renderer.addAnnotation({
+                    text: 'Price Level',
+                    x: -0.5,
+                    y: 6
+                });
+                
+                // Create equilibrium annotations
+                this.updateEquilibrium();
+                
+                // Create controls
+                this.createControls();
+            }
+            
+            createADCurve() {
+                // Generate points for AD curve
+                const points = [];
+                const numPoints = 20;
+                
+                for (let i = 0; i <= numPoints; i++) {
+                    const x = (i / numPoints) * 12;
+                    // AD function: y = intercept / (1 + curvature * x)
+                    const y = this.params.adIntercept / (1 + this.params.adCurvature * x);
+                    points.push({ x, y });
+                }
+                
+                // Create or update AD curve
+                if (this.lines.ad) {
+                    this.renderer.updateLine(this.lines.ad, { points });
+                } else {
+                    this.lines.ad = this.renderer.addLine({
+                        label: 'AD',
+                        color: '#e74c3c',
+                        isCurved: true,
+                        points
+                    });
+                }
+            }
+            
+            updateEquilibrium() {
+                // Find short-run equilibrium (AD-SRAS intersection)
+                // Due to the curve, we'll approximate
+                
+                // Find where SRAS and AD intersect
+                const checkPoints = [];
+                for (let x = 0; x < 12; x += 0.1) {
+                    const srasY = this.params.srasSlope * x + this.params.srasIntercept;
+                    const adY = this.params.adIntercept / (1 + this.params.adCurvature * x);
+                    
+                    checkPoints.push({
+                        x,
+                        diff: Math.abs(srasY - adY),
+                        y: srasY
+                    });
+                }
+                
+                // Get point with smallest difference
+                checkPoints.sort((a, b) => a.diff - b.diff);
+                const srEq = checkPoints[0];
+                
+                // Calculate LRAS intersection with AD
+                const lrasX = this.params.lrasPosition;
+                const lrasY = this.params.adIntercept / (1 + this.params.adCurvature * lrasX);
+                
+                // Remove existing annotations
+                if (this.annotations.shortRunEq) {
+                    this.renderer.annotations = this.renderer.annotations.filter(
+                        a => a.id !== this.annotations.shortRunEq && a.id !== this.annotations.longRunEq
+                    );
+                }
+                
+                // Add new annotations
+                this.annotations.shortRunEq = this.renderer.addAnnotation({
+                    text: `SR Equilibrium (${srEq.x.toFixed(1)}, ${srEq.y.toFixed(1)})`,
+                    x: srEq.x + 0.3,
+                    y: srEq.y
+                });
+                
+                this.annotations.longRunEq = this.renderer.addAnnotation({
+                    text: `LR Equilibrium (${lrasX.toFixed(1)}, ${lrasY.toFixed(1)})`,
+                    x: lrasX + 0.3,
+                    y: lrasY
+                });
+            }
+            
+            createControls() {
+                const controlsContainer = document.getElementById('model-controls');
+                controlsContainer.innerHTML = `
+                    <div class="control-group">
+                        <label>AD Level: <span id="ad-level-value">${this.params.adIntercept}</span></label>
+                        <input type="range" id="ad-level" min="5" max="15" step="0.5" value="${this.params.adIntercept}">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>SRAS Position: <span id="sras-intercept-value">${this.params.srasIntercept}</span></label>
+                        <input type="range" id="sras-intercept" min="0" max="5" step="0.5" value="${this.params.srasIntercept}">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>LRAS Position: <span id="lras-position-value">${this.params.lrasPosition}</span></label>
+                        <input type="range" id="lras-position" min="4" max="10" step="0.5" value="${this.params.lrasPosition}">
+                    </div>
+                    
+                    <div class="control-group">
+                        <button id="shift-ad-right" class="tool-btn">Shift AD Right →</button>
+                        <button id="shift-ad-left" class="tool-btn">← Shift AD Left</button>
+                        <button id="shift-sras-right" class="tool-btn">Shift SRAS Right →</button>
+                        <button id="shift-sras-left" class="tool-btn">← Shift SRAS Left</button>
+                        <button id="shift-lras-right" class="tool-btn">Shift LRAS Right →</button>
+                        <button id="shift-lras-left" class="tool-btn">← Shift LRAS Left</button>
+                    </div>
+                `;
+                
+                // Add event listeners
+                document.getElementById('ad-level').addEventListener('input', e => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('ad-level-value').textContent = value;
+                    this.updateParams({ adIntercept: value });
+                });
+                
+                document.getElementById('sras-intercept').addEventListener('input', e => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('sras-intercept-value').textContent = value;
+                    this.updateParams({ srasIntercept: value });
+                });
+                
+                document.getElementById('lras-position').addEventListener('input', e => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('lras-position-value').textContent = value;
+                    this.updateParams({ lrasPosition: value });
+                });
+                
+                document.getElementById('shift-ad-right').addEventListener('click', () => {
+                    this.animateShift('ad', 1);
+                });
+                
+                document.getElementById('shift-ad-left').addEventListener('click', () => {
+                    this.animateShift('ad', -1);
+                });
+                
+                document.getElementById('shift-sras-right').addEventListener('click', () => {
+                    this.animateShift('sras', -0.5);
+                });
+                
+                document.getElementById('shift-sras-left').addEventListener('click', () => {
+                    this.animateShift('sras', 0.5);
+                });
+                
+                document.getElementById('shift-lras-right').addEventListener('click', () => {
+                    this.animateShift('lras', 0.5);
+                });
+                
+                document.getElementById('shift-lras-left').addEventListener('click', () => {
+                    this.animateShift('lras', -0.5);
+                });
+            }
+            
+            updateParams(newParams) {
+                // Update parameters
+                Object.assign(this.params, newParams);
+                
+                // Update AD curve
+                this.createADCurve();
+                
+                // Update SRAS line
+                this.renderer.updateLine(this.lines.sras, {
+                    points: [
+                        { x: 0, y: this.params.srasIntercept },
+                        { x: 12, y: this.params.srasSlope * 12 + this.params.srasIntercept }
+                    ]
+                });
+                
+                // Update LRAS line
+                this.renderer.updateLine(this.lines.lras, {
+                    verticalX: this.params.lrasPosition,
+                    points: [
+                        { x: this.params.lrasPosition, y: 0 },
+                        { x: this.params.lrasPosition, y: 12 }
+                    ]
+                });
+                
+                // Update equilibrium
+                this.updateEquilibrium();
+            }
+            
+            animateShift(curve, amount) {
+                let startValue, endValue, paramName;
+                
+                if (curve === 'ad') {
+                    startValue = this.params.adIntercept;
+                    endValue = startValue + amount;
+                    paramName = 'adIntercept';
+                } else if (curve === 'sras') {
+                    startValue = this.params.srasIntercept;
+                    endValue = startValue + amount;
+                    paramName = 'srasIntercept';
+                } else if (curve === 'lras') {
+                    startValue = this.params.lrasPosition;
+                    endValue = startValue + amount;
+                    paramName = 'lrasPosition';
+                }
+                
+                // Simple animation
+                const steps = 20;
+                const duration = 500; // ms
+                const stepTime = duration / steps;
+                let currentStep = 0;
+                
+                const animate = () => {
+                    currentStep++;
+                    const progress = currentStep / steps;
+                    const current = startValue + (endValue - startValue) * progress;
+                    
+                    // Create a temporary parameter object
+                    const update = {};
+                    update[paramName] = current;
+                    this.updateParams(update);
+                    
+                    if (currentStep < steps) {
+                        setTimeout(animate, stepTime);
+                    }
+                };
+                
+                animate();
+            }
+            
+            destroy() {
+                // Remove all lines
+                Object.values(this.lines).forEach(lineId => {
+                    this.renderer.removeLine(lineId);
+                });
+                
+                // Remove all annotations
+                this.renderer.annotations = [];
+            }
+        }
+
+        class PpcModel {
+            constructor(renderer) {
+                this.renderer = renderer;
+                this.lines = {};
+                this.annotations = {};
+                
+                this.params = {
+                    maxGoodA: 10,
+                    maxGoodB: 10,
+                    curvature: 2,
+                    showPoints: true
+                };
+            }
+            
+            initialize() {
+                // Set graph bounds
+                this.renderer.bounds = {
+                    xMin: 0,
+                    xMax: 12,
+                    yMin: 0, 
+                    yMax: 12
+                };
+                
+                // Create PPC curve
+                this.createPPCCurve();
+                
+                // Add labels
+                this.annotations.xLabel = this.renderer.addAnnotation({
+                    text: 'Good A',
+                    x: 6,
+                    y: -0.5
+                });
+                
+                this.annotations.yLabel = this.renderer.addAnnotation({
+                    text: 'Good B',
+                    x: -0.5,
+                    y: 6
+                });
+                
+                // Add points
+                if (this.params.showPoints) {
+                    this.addDemonstrationPoints();
+                }
+                
+                // Create controls
+                this.createControls();
+            }
+            
+            createPPCCurve() {
+                // Generate points for PPC curve
+                const points = [];
+                const numPoints = 30;
+                
+                for (let i = 0; i <= numPoints; i++) {
+                    const x = (i / numPoints) * this.params.maxGoodA;
+                    
+                    // PPC equation: y = maxGoodB * (1 - (x/maxGoodA)^(1/curvature))^curvature
+                    const ratio = x / this.params.maxGoodA;
+                    const y = this.params.maxGoodB * Math.pow(1 - Math.pow(ratio, 1 / this.params.curvature), this.params.curvature);
+                    
+                    points.push({ x, y });
+                }
+                
+                // Create or update PPC curve
+                if (this.lines.ppc) {
+                    this.renderer.updateLine(this.lines.ppc, { points });
+                } else {
+                    this.lines.ppc = this.renderer.addLine({
+                        label: 'PPC',
+                        color: '#3498db',
+                        thickness: 3,
+                        isCurved: true,
+                        points
+                    });
+                }
+            }
+            
+            addDemonstrationPoints() {
+                // Calculate points
+                const efficientX = this.params.maxGoodA * 0.7;
+                const efficientY = this.params.maxGoodB * Math.pow(1 - Math.pow(efficientX / this.params.maxGoodA, 1 / this.params.curvature), this.params.curvature);
+                
+                const inefficientX = this.params.maxGoodA * 0.3;
+                const inefficientY = this.params.maxGoodB * Math.pow(1 - Math.pow(inefficientX / this.params.maxGoodA, 1 / this.params.curvature), this.params.curvature) * 0.6;
+                
+                const unattainableX = this.params.maxGoodA * 0.5;
+                const unattainableY = this.params.maxGoodB * Math.pow(1 - Math.pow(unattainableX / this.params.maxGoodA, 1 / this.params.curvature), this.params.curvature) * 1.3;
+                
+                // Add annotations
+                this.annotations.efficient = this.renderer.addAnnotation({
+                    text: 'Efficient',
+                    x: efficientX,
+                    y: efficientY
+                });
+                
+                this.annotations.inefficient = this.renderer.addAnnotation({
+                    text: 'Inefficient',
+                    x: inefficientX,
+                    y: inefficientY
+                });
+                
+                this.annotations.unattainable = this.renderer.addAnnotation({
+                    text: 'Unattainable',
+                    x: unattainableX,
+                    y: unattainableY
+                });
+            }
+            
+            createControls() {
+                const controlsContainer = document.getElementById('model-controls');
+                controlsContainer.innerHTML = `
+                    <div class="control-group">
+                        <label>Max Good A: <span id="max-good-a-value">${this.params.maxGoodA}</span></label>
+                        <input type="range" id="max-good-a" min="5" max="15" step="0.5" value="${this.params.maxGoodA}">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Max Good B: <span id="max-good-b-value">${this.params.maxGoodB}</span></label>
+                        <input type="range" id="max-good-b" min="5" max="15" step="0.5" value="${this.params.maxGoodB}">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Curvature: <span id="curvature-value">${this.params.curvature}</span></label>
+                        <input type="range" id="curvature" min="1" max="5" step="0.1" value="${this.params.curvature}">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="show-points" ${this.params.showPoints ? 'checked' : ''}>
+                            Show Demonstration Points
+                        </label>
+                    </div>
+                    
+                    <div class="control-group">
+                        <button id="show-growth" class="tool-btn primary-btn">Show Economic Growth</button>
+                    </div>
+                `;
+                
+                // Add event listeners
+                document.getElementById('max-good-a').addEventListener('input', e => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('max-good-a-value').textContent = value;
+                    this.updateParams({ maxGoodA: value });
+                });
+                
+                document.getElementById('max-good-b').addEventListener('input', e => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('max-good-b-value').textContent = value;
+                    this.updateParams({ maxGoodB: value });
+                });
+                
+                document.getElementById('curvature').addEventListener('input', e => {
+                    const value = parseFloat(e.target.value);
+                    document.getElementById('curvature-value').textContent = value;
+                    this.updateParams({ curvature: value });
+                });
+                
+                document.getElementById('show-points').addEventListener('change', e => {
+                    this.updateParams({ showPoints: e.target.checked });
+                });
+                
+                document.getElementById('show-growth').addEventListener('click', () => {
+                    this.showEconomicGrowth();
+                });
+            }
+            
+            updateParams(newParams) {
+                // Update parameters
+                Object.assign(this.params, newParams);
+                
+                // Update PPC curve
+                this.createPPCCurve();
+                
+                // Update points
+                this.renderer.annotations = this.renderer.annotations.filter(
+                    a => a.id === this.annotations.xLabel || a.id === this.annotations.yLabel
+                );
+                
+                if (this.params.showPoints) {
+                    this.addDemonstrationPoints();
+                }
+            }
+            
+            showEconomicGrowth() {
+                const origMaxA = this.params.maxGoodA;
+                const origMaxB = this.params.maxGoodB;
+                const newMaxA = origMaxA * 1.2;
+                const newMaxB = origMaxB * 1.2;
+                
+                // Simple animation
+                const steps = 30;
+                const duration = 1000; // ms
+                const stepTime = duration / steps;
+                let currentStep = 0;
+                
+                const animate = () => {
+                    currentStep++;
+                    const progress = currentStep / steps;
+                    
+                    // Easing function for smoother animation
+                    const easedProgress = 1 - Math.pow(1 - progress, 3);
+                    
+                    const currentMaxA = origMaxA + (newMaxA - origMaxA) * easedProgress;
+                    const currentMaxB = origMaxB + (newMaxB - origMaxB) * easedProgress;
+                    
+                    this.updateParams({
+                        maxGoodA: currentMaxA,
+                        maxGoodB: currentMaxB
+                    });
+                    
+                    if (currentStep < steps) {
+                        setTimeout(animate, stepTime);
+                    }
+                };
+                
+                animate();
+            }
+            
+            destroy() {
+                // Remove all lines
+                Object.values(this.lines).forEach(lineId => {
+                    this.renderer.removeLine(lineId);
+                });
+                
+                // Remove all annotations
+                this.renderer.annotations = [];
+            }
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create renderer
+            const renderer = new GraphRenderer('graph-canvas');
+            
+            // Create model instances
+            const models = {
+                'supply-demand': new SupplyDemandModel(renderer),
+                'ad-as': new AdAsModel(renderer),
+                'ppc': new PpcModel(renderer)
+            };
+            
+            // Initialize with default model
+            let currentModel = models['supply-demand'];
+            currentModel.initialize();
+            
+            // Model selection
+            document.getElementById('model-select').addEventListener('change', function(e) {
+                const modelType = e.target.value;
+                
+                // Clean up current model
+                if (currentModel) {
+                    currentModel.destroy();
+                }
+                
+                // Initialize new model
+                if (models[modelType]) {
+                    currentModel = models[modelType];
+                    currentModel.initialize();
+                } else if (modelType === 'custom') {
+                    setupCustomGraph(renderer);
+                } else {
+                    // Not yet implemented
+                    alert(`The ${modelType} model is not yet implemented.`);
+                    document.getElementById('model-select').value = 'supply-demand';
+                    currentModel = models['supply-demand'];
+                    currentModel.initialize();
+                }
+            });
+            
+            // Custom graph setup
+            function setupCustomGraph(renderer) {
+                // Reset current model
+                currentModel = null;
+                
+                // Clear graph
+                renderer.lines = [];
+                renderer.annotations = [];
+                renderer.render();
+                
+                // Add basic instructions
+                const controlsContainer = document.getElementById('model-controls');
+                controlsContainer.innerHTML = `
+                    <p>Custom Graph Mode</p>
+                    <p>Use the tools below to create your own economic graph.</p>
+                    <p>You can add lines, annotations, and find intersections.</p>
+                `;
+                
+                // Add axis labels
+                renderer.addAnnotation({
+                    text: 'X-Axis',
+                    x: 5,
+                    y: -0.5
+                });
+                
+                renderer.addAnnotation({
+                    text: 'Y-Axis',
+                    x: -0.5,
+                    y: 5
+                });
+            }
+            
+            // Add line button
+            document.getElementById('add-line-btn').addEventListener('click', function() {
+                const lineId = renderer.addLine({
+                    color: getRandomColor(),
+                    points: [
+                        { x: 2, y: 2 },
+                        { x: 8, y: 8 }
+                    ]
+                });
+                
+                showTooltip('Click and drag the endpoints to adjust the line');
+            });
+            
+            // Add label button
+            document.getElementById('add-label-btn').addEventListener('click', function() {
+                const text = prompt('Enter annotation text:');
+                if (!text) return;
+                
+                renderer.addAnnotation({
+                    text: text,
+                    x: 5,
+                    y: 5
+                });
+                
+                showTooltip('Drag to reposition the annotation');
+            });
+            
+            // Find intersections button
+            document.getElementById('find-intersections-btn').addEventListener('click', function() {
+                renderer.findIntersections();
+                renderer.render();
+                
+                if (renderer.intersections.length === 0) {
+                    showTooltip('No intersections found');
+                } else {
+                    showTooltip(`Found ${renderer.intersections.length} intersection(s)`);
+                    
+                    // Highlight intersections with a pulsing effect
+                    renderer.intersections.forEach(intersection => {
+                        const point = graphToCanvasCoords(
+                            intersection.x, 
+                            intersection.y, 
+                            renderer.canvas,
+                            renderer.bounds
+                        );
+                        
+                        const pointElement = document.createElement('div');
+                        pointElement.className = 'intersection-point';
+                        pointElement.style.left = `${point.x}px`;
+                        pointElement.style.top = `${point.y}px`;
+                        
+                        document.getElementById('annotations-layer').appendChild(pointElement);
+                        
+                        // Remove after animation
+                        setTimeout(() => {
+                            if (pointElement.parentNode) {
+                                pointElement.parentNode.removeChild(pointElement);
+                            }
+                        }, 3000);
+                    });
+                }
+            });
+            
+            // Help button
+            document.getElementById('help-btn').addEventListener('click', function() {
+                document.getElementById('help-overlay').classList.remove('hidden');
+            });
+            
+            document.getElementById('close-help-btn').addEventListener('click', function() {
+                document.getElementById('help-overlay').classList.add('hidden');
+            });
+            
+            // Export functionality
+            document.getElementById('export-btn').addEventListener('click', function() {
+                document.getElementById('export-modal').classList.remove('hidden');
+            });
+            
+            document.getElementById('export-png-btn').addEventListener('click', function() {
+                renderer.export('png');
+                document.getElementById('export-modal').classList.add('hidden');
+            });
+            
+            document.getElementById('export-svg-btn').addEventListener('click', function() {
+                renderer.export('svg');
+                document.getElementById('export-modal').classList.add('hidden');
+            });
+            
+            document.getElementById('export-pdf-btn').addEventListener('click', function() {
+                renderer.export('pdf');
+                document.getElementById('export-modal').classList.add('hidden');
+            });
+            
+            document.getElementById('close-export-btn').addEventListener('click', function() {
+                document.getElementById('export-modal').classList.add('hidden');
+            });
+            
+            // Make annotations draggable
+            document.getElementById('annotations-layer').addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('annotation') && e.target.dataset.draggable === 'true') {
+                    const annotationEl = e.target;
+                    const annotationId = annotationEl.dataset.id;
+                    const annotation = renderer.annotations.find(a => a.id === annotationId);
+                    
+                    if (!annotation) return;
+                    
+                    // Initial mouse position
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    
+                    // Initial annotation position
+                    const startAnnotX = annotation.x;
+                    const startAnnotY = annotation.y;
+                    
+                    function handleMouseMove(moveEvent) {
+                        const dx = moveEvent.clientX - startX;
+                        const dy = moveEvent.clientY - startY;
+                        
+                        // Convert screen delta to graph delta
+                        const { width, height } = renderer.canvas;
+                        const { xMin, xMax, yMin, yMax } = renderer.bounds;
+                        const xDelta = dx * (xMax - xMin) / width;
+                        const yDelta = -dy * (yMax - yMin) / height; // Negative since y-axis is inverted
+                        
+                        // Update annotation position
+                        annotation.x = startAnnotX + xDelta;
+                        annotation.y = startAnnotY + yDelta;
+                        
+                        renderer.renderAnnotations();
+                    }
+                    
+                    function handleMouseUp() {
+                        document.removeEventListener('mousemove', handleMouseMove);
+                        document.removeEventListener('mouseup', handleMouseUp);
+                    }
+                    
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                }
+            });
+            
+            // Utility function to generate a random color
+            function getRandomColor() {
+                const colors = [
+                    '#3498db', // Blue
+                    '#2ecc71', // Green
+                    '#e74c3c', // Red
+                    '#f39c12', // Orange
+                    '#9b59b6', // Purple
+                    '#1abc9c'  // Teal
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            // Utility function to show a tooltip
+            function showTooltip(text, duration = 3000) {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'tooltip';
+                tooltip.textContent = text;
+                tooltip.style.left = '50%';
+                tooltip.style.top = '20px';
+                tooltip.style.transform = 'translateX(-50%)';
+                
+                document.body.appendChild(tooltip);
+                
+                setTimeout(() => {
+                    tooltip.style.opacity = '0';
+                    setTimeout(() => {
+                        document.body.removeChild(tooltip);
+                    }, 300);
+                }, duration);
+            }
+            
+            // Show welcome message
+            setTimeout(() => {
+                showTooltip('Welcome to IB Economics Graphing Tool! Choose a model or click Help.', 5000);
+            }, 500);
+        });
+    </script>
+
+
+</body></html>
