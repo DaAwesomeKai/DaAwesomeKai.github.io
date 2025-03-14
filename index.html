@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Economic Graph Generator</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Economic Graph Generator</h1>
+        <p>Create interactive economic graphs for studying and visualization</p>
+    </header>
+
+    <main class="container">
+        <div class="sidebar">
+            <div class="graph-selector">
+                <h2>Graph Type</h2>
+                <select id="graphType">
+                    <option value="supply-demand">Supply and Demand</option>
+                    <option value="subsidy-tariff">Subsidy vs Tariff</option>
+                    <option value="elasticity">Price Elasticity</option>
+                    <option value="monopoly">Monopoly Pricing</option>
+                    <option value="tax-incidence">Tax Incidence</option>
+                </select>
+            </div>
+
+            <div id="parameters-panel" class="parameters-panel">
+                <!-- Parameters will be loaded dynamically based on the selected graph type -->
+            </div>
+
+            <button id="generateBtn" class="btn primary-btn">Generate Graph</button>
+            <button id="saveBtn" class="btn secondary-btn">Save Graph</button>
+            <button id="resetBtn" class="btn">Reset Parameters</button>
+        </div>
+
+        <div class="content">
+            <div class="graph-container">
+                <canvas id="graphCanvas" width="600" height="400"></canvas>
+            </div>
+            
+            <div id="graph-explanation" class="explanation">
+                <!-- Explanation will be loaded dynamically based on the selected graph -->
+            </div>
+        </div>
+    </main>
+
+    <div id="exportModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Export Graph</h2>
+            <p>Save your graph as an image or export the data.</p>
+            <div class="export-options">
+                <button id="downloadPNG" class="btn">Download as PNG</button>
+                <button id="downloadCSV" class="btn">Export Data (CSV)</button>
+                <button id="copyCode" class="btn">Copy HTML Embed Code</button>
+            </div>
+            <div id="embedCode" class="code-container">
+                <pre><code id="embedCodeText"></code></pre>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Created for economics students and educators</p>
+        <p>&copy; 2025 Economic Graphing Tool</p>
+    </footer>
+
+    <!-- Load scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/graphUtils.js"></script>
+    <script src="js/graphTypes/supplyDemand.js"></script>
+    <script src="js/graphTypes/subsidyTariff.js"></script>
+    <script src="js/graphTypes/elasticity.js"></script>
+    <script src="js/graphTypes/monopoly.js"></script>
+    <script src="js/graphTypes/taxIncidence.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
